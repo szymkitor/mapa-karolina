@@ -1,4 +1,63 @@
-const viewer = document.getElementById('viewer');
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Podkład Wektorowy</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        body, html { 
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background-color: #ffffff; 
+            touch-action: none;
+
+            /* Całkowita blokada zaznaczania jakichkolwiek elementów */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        #viewer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            cursor: grab;
+        }
+        #viewer:active {
+            cursor: grabbing;
+        }
+        #content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        img {
+            display: block;
+            max-width: none;
+            /* Wyłączenie reakcji wskaźnika na sam obrazek */
+            pointer-events: none;
+            -webkit-user-drag: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="viewer">
+        <div id="content">
+            <img src="mapa_droga-Model.svg" alt="Mapa" id="map-img">
+        </div>
+    </div>
+
+    <script>
+        const viewer = document.getElementById('viewer');
         const content = document.getElementById('content');
         const img = document.getElementById('map-img');
 
@@ -24,22 +83,19 @@ const viewer = document.getElementById('viewer');
             setTransform();
         }
 
-        // Reaguj na załadowanie (oraz jeśli obrazek jest już w pamięci podręcznej)
         if (img.complete) {
             initMap();
         } else {
             img.onload = initMap;
         }
 
-        img.onerror = () => {
-            console.error("BŁĄD: Nie znaleziono pliku SVG pod wskazaną ścieżką!");
-        };
-
-        img.addEventListener('dragstart', (e) => e.preventDefault());
+        // --- GLOBALNA BLOKADA NATYWNEGO DRAG & DROP ---
+        window.addEventListener('dragstart', (e) => e.preventDefault());
 
         // --- OBSŁUGA MYSZY (DESKTOP) ---
         viewer.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
+            if (e.button !== 0) return; // Tylko lewy przycisk
+            e.preventDefault(); // Blokuje domyślne chwytanie przeglądarki
             isDragging = true;
             startX = e.clientX - pointX;
             startY = e.clientY - pointY;
@@ -53,10 +109,16 @@ const viewer = document.getElementById('viewer');
             setTransform();
         });
 
+        // Puszczenie przycisku myszy NIEZALEŻNIE od tego, gdzie znajduje się kursor
         window.addEventListener('mouseup', () => {
             isDragging = false;
         });
 
+        // Dodatkowe zabezpieczenie: przerwij przeciąganie, gdy okno straci ostrość lub kursor wyjdzie z ekranu
+        window.addEventListener('mouseleave', () => { isDragging = false; });
+        window.addEventListener('blur', () => { isDragging = false; });
+
+        // ZOOM KÓŁKIEM MYSZY
         viewer.addEventListener('wheel', (e) => {
             e.preventDefault();
             const xs = (e.clientX - pointX) / scale;
@@ -72,7 +134,7 @@ const viewer = document.getElementById('viewer');
             setTransform();
         }, { passive: false });
 
-        // --- OBSŁUGA DOTYKU (MOBILNE) ---
+        // --- OBSŁUGA EKRANU DOTYKOWEGO (MOBILNE) ---
         viewer.addEventListener('touchstart', (e) => {
             if (e.touches.length === 1) {
                 isDragging = true;
@@ -121,3 +183,6 @@ const viewer = document.getElementById('viewer');
             if (e.touches.length < 2) initialPinchDistance = null;
             if (e.touches.length === 0) isDragging = false;
         });
+    </script>
+</body>
+</html>
